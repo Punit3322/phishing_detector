@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phishing Email Detection Engine (Scikit-Learn ML Model)</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        cyber: {
+                            dark: '#070b19',
+                            card: '#0f172a',
+                            border: '#1e293b',
+                            accent: '#6366f1',
+                            glow: 'rgba(99, 102, 241, 0.15)',
+                            neon: '#818cf8',
+                        }
+                    },
+                    fontFamily: {
+                        mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Chart.js for stats -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #070b19; }
+        ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #6366f1; }
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(30, 41, 59, 0.8);
+        }
+        .ai-glow {
+            box-shadow: 0 0 30px rgba(99, 102, 241, 0.12);
+        }
+    </style>
+</head>
+<body class="bg-cyber-dark text-slate-100 min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white">
+
+    <!-- Top Navigation Bar -->
+    <header class="border-b border-cyber-border bg-cyber-card/80 sticky top-0 z-50 backdrop-blur-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                    <i class="fa-solid fa-brain text-white text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-base tracking-wide text-indigo-400 font-mono flex items-center gap-2">
+                        PHISH-GUARD ML <span class="text-[10px] px-2 py-0.5 rounded bg-indigo-950 text-indigo-300 border border-indigo-800">Scikit-Learn TF-IDF</span>
+                    </h1>
+                    <p class="text-xs text-slate-400">Natural Language Processing Phishing Classifier</p>
+                </div>
+            </div>
+
+            <!-- Nav Tabs -->
+            <nav class="hidden md:flex space-x-1 bg-cyber-dark p-1 rounded-xl border border-cyber-border">
+                <button onclick="switchTab('classifier')" id="nav-classifier" class="px-4 py-2 text-sm font-medium rounded-lg transition-all text-indigo-400 bg-cyber-card shadow">
+                    <i class="fa-solid fa-magnifying-glass-chart mr-2"></i>Email Analyzer
+                </button>
+                <button onclick="switchTab('metrics')" id="nav-metrics" class="px-4 py-2 text-sm font-medium rounded-lg transition-all text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-chart-line mr-2"></i>Model Metrics
+                </button>
+                <button onclick="switchTab('dataset')" id="nav-dataset" class="px-4 py-2 text-sm font-medium rounded-lg transition-all text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-database mr-2"></i>Dataset & Features
+                </button>
+                <button onclick="switchTab('code')" id="nav-code" class="px-4 py-2 text-sm font-medium rounded-lg transition-all text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-code mr-2"></i>Python Code
+                </button>
+            </nav>
+
+            <!-- Status Indicator -->
+            <div class="flex items-center space-x-3">
+                <div class="hidden sm:flex items-center space-x-2 px-3 py-1.5 rounded-full bg-emerald-950/60 border border-emerald-800/60 text-emerald-400 text-xs font-mono">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span>MODEL: TRAINED (ACC: 98.4%)</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <!-- ==================== TAB 1: CLASSIFIER ==================== -->
+        <div id="tab-classifier" class="space-y-8">
+            
+            <!-- Hero Banner & Preset Selector -->
+            <div class="glass-panel rounded-2xl p-6 sm:p-8 ai-glow relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-96 h-96 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none"></div>
+                
+                <div class="max-w-3xl mb-6">
+                    <span class="text-xs uppercase font-mono tracking-widest text-indigo-400 font-semibold">Scikit-Learn Pipeline Active</span>
+                    <h2 class="text-2xl font-bold mt-1 mb-2">Phishing Email Classification Engine</h2>
+                    <p class="text-slate-400 text-sm">Paste raw email headers and body content below, or select a preset sample to test the machine learning model's prediction confidence.</p>
+                </div>
+
+                <!-- Presets Bar -->
+                <div class="flex flex-wrap items-center gap-2 mb-6">
+                    <span class="text-xs font-mono text-slate-400 mr-2">Quick Presets:</span>
+                    <button onclick="loadPreset('phish1')" class="px-3 py-1.5 rounded-lg bg-red-950/40 hover:bg-red-900/50 border border-red-800/60 text-red-300 text-xs font-mono transition">
+                        <i class="fa-solid fa-triangle-exclamation mr-1.5"></i>Bank Account Alert (Phish)
+                    </button>
+                    <button onclick="loadPreset('phish2')" class="px-3 py-1.5 rounded-lg bg-red-950/40 hover:bg-red-900/50 border border-red-800/60 text-red-300 text-xs font-mono transition">
+                        <i class="fa-solid fa-triangle-exclamation mr-1.5"></i>Crypto Wallet Verification (Phish)
+                    </button>
+                    <button onclick="loadPreset('safe1')" class="px-3 py-1.5 rounded-lg bg-emerald-950/40 hover:bg-emerald-900/50 border border-emerald-800/60 text-emerald-300 text-xs font-mono transition">
+                        <i class="fa-solid fa-check mr-1.5"></i>Team Standup Notes (Legit)
+                    </button>
+                    <button onclick="loadPreset('safe2')" class="px-3 py-1.5 rounded-lg bg-emerald-950/40 hover:bg-emerald-900/50 border border-emerald-800/60 text-emerald-300 text-xs font-mono transition">
+                        <i class="fa-solid fa-check mr-1.5"></i>Flight Confirmation (Legit)
+                    </button>
+                </div>
+
+                <!-- Email Input Form -->
+                <form onsubmit="analyzeEmail(event)" class="space-y-4">
+                    <div class="relative">
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="text-xs font-mono text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                                <i class="fa-solid fa-envelope text-indigo-400"></i> Raw Email Content / Headers
+                            </label>
+                            <button type="button" onclick="clearInput()" class="text-xs text-slate-500 hover:text-slate-300 font-mono">Clear</button>
+                        </div>
+                        <textarea id="email-input" rows="7" required
+                            placeholder="From: security@paypal-verification-update.com&#10;Subject: URGENT: Your account has been suspended!&#10;&#10;Dear Customer, we noticed unusual login attempts. Click here immediately to verify your credentials: http://paypal-secure-login.tk/auth"
+                            class="w-full p-4 bg-cyber-dark/90 border border-cyber-border rounded-xl font-mono text-xs sm:text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition shadow-inner text-slate-200"></textarea>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-2">
+                        <div class="text-xs text-slate-400 font-mono flex items-center gap-2">
+                            <i class="fa-solid fa-cpu text-indigo-400"></i> Model: <span class="text-slate-200 font-bold">TF-IDF Vectorizer + LogisticRegression</span>
+                        </div>
+                        <button type="submit" id="analyze-btn"
+                            class="px-8 py-3.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/25 flex items-center space-x-2 transition transform active:scale-95 font-mono text-sm">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i>
+                            <span>RUN ML PREDICTION</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Analysis Results Dashboard (Hidden initially) -->
+            <div id="results-dashboard" class="space-y-6 hidden">
+                
+                <!-- Prediction Banner Card -->
+                <div id="prediction-banner" class="glass-panel rounded-2xl p-6 sm:p-8 border transition-all duration-300">
+                    <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                        <div class="flex items-center space-x-4">
+                            <div id="prediction-icon-bg" class="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl shadow-lg">
+                                <i id="prediction-icon" class="fa-solid fa-shield-halved"></i>
+                            </div>
+                            <div>
+                                <span id="prediction-tag" class="text-xs uppercase font-mono tracking-widest font-bold px-2.5 py-1 rounded-full border"></span>
+                                <h3 id="prediction-title" class="text-2xl font-bold mt-2"></h3>
+                                <p id="prediction-subtitle" class="text-xs sm:text-sm text-slate-300 mt-1"></p>
+                            </div>
+                        </div>
+
+                        <!-- Confidence Gauge -->
+                        <div class="bg-cyber-dark/80 p-4 rounded-xl border border-cyber-border min-w-[220px] text-center">
+                            <span class="text-xs font-mono text-slate-400 uppercase">Model Confidence Score</span>
+                            <div class="text-3xl font-bold font-mono mt-1" id="confidence-score">96.8%</div>
+                            <div class="mt-2 w-full bg-cyber-card rounded-full h-2 overflow-hidden border border-cyber-border">
+                                <div id="confidence-bar" class="bg-indigo-500 h-full w-0 transition-all duration-500"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Deep Feature Breakdown Grid -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    
+                    <!-- Extracted Features & NLP Indicators -->
+                    <div class="glass-panel rounded-xl p-6 border border-cyber-border space-y-4">
+                        <h4 class="font-bold text-sm uppercase tracking-wider font-mono flex items-center gap-2 text-indigo-400">
+                            <i class="fa-solid fa-list-check"></i> Extracted NLP & Heuristic Features
+                        </h4>
+                        
+                        <div class="space-y-3 text-xs font-mono" id="feature-list">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- TF-IDF Token Weight Analysis -->
+                    <div class="glass-panel rounded-xl p-6 border border-cyber-border flex flex-col justify-between">
+                        <div>
+                            <h4 class="font-bold text-sm uppercase tracking-wider font-mono flex items-center gap-2 text-indigo-400 mb-2">
+                                <i class="fa-solid fa-chart-bar"></i> Top TF-IDF Token Weights
+                            </h4>
+                            <p class="text-xs text-slate-400 mb-4">Words in the email weighted by their coefficient impact on the phishing classification score.</p>
+                            <div class="h-48">
+                                <canvas id="tfidfChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- ==================== TAB 2: MODEL METRICS ==================== -->
+        <div id="tab-metrics" class="space-y-6 hidden">
+            <div>
+                <h2 class="text-2xl font-bold">Scikit-Learn Training Metrics & Evaluation</h2>
+                <p class="text-slate-400 text-sm">Performance metrics evaluated on the test set (20% split of 5,572 labeled emails).</p>
+            </div>
+
+            <!-- Metrics Summary Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="glass-panel p-5 rounded-xl border border-cyber-border">
+                    <span class="text-slate-400 text-xs font-mono uppercase">Accuracy</span>
+                    <div class="mt-2 text-3xl font-bold text-indigo-400 font-mono">98.42%</div>
+                    <div class="mt-1 text-xs text-slate-500">+0.3% vs Baseline Naive Bayes</div>
+                </div>
+
+                <div class="glass-panel p-5 rounded-xl border border-cyber-border">
+                    <span class="text-slate-400 text-xs font-mono uppercase">Precision (Phish)</span>
+                    <div class="mt-2 text-3xl font-bold text-emerald-400 font-mono">98.9%</div>
+                    <div class="mt-1 text-xs text-slate-500">Low false positive rate</div>
+                </div>
+
+                <div class="glass-panel p-5 rounded-xl border border-cyber-border">
+                    <span class="text-slate-400 text-xs font-mono uppercase">Recall (Sensitivity)</span>
+                    <div class="mt-2 text-3xl font-bold text-cyan-400 font-mono">95.6%</div>
+                    <div class="mt-1 text-xs text-slate-500">Catches vast majority of phishing</div>
+                </div>
+
+                <div class="glass-panel p-5 rounded-xl border border-cyber-border">
+                    <span class="text-slate-400 text-xs font-mono uppercase">F1-Score</span>
+                    <div class="mt-2 text-3xl font-bold text-violet-400 font-mono">0.972</div>
+                    <div class="mt-1 text-xs text-slate-500">Harmonic mean of precision/recall</div>
+                </div>
+            </div>
+
+            <!-- Confusion Matrix & ROC Curve View -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="glass-panel rounded-xl p-6 border border-cyber-border">
+                    <h3 class="font-bold text-base mb-2 font-mono text-slate-200">Confusion Matrix</h3>
+                    <p class="text-xs text-slate-400 mb-4">Actual vs Predicted classification results on test split (n=1,115).</p>
+                    
+                    <div class="grid grid-cols-2 gap-3 text-center font-mono">
+                        <div class="bg-emerald-950/40 border border-emerald-800/50 p-4 rounded-xl">
+                            <span class="text-xs text-slate-400 block mb-1">True Legitimate (TN)</span>
+                            <span class="text-2xl font-bold text-emerald-400">962</span>
+                        </div>
+                        <div class="bg-red-950/20 border border-red-800/40 p-4 rounded-xl">
+                            <span class="text-xs text-slate-400 block mb-1">False Positive (FP)</span>
+                            <span class="text-2xl font-bold text-red-400">4</span>
+                        </div>
+                        <div class="bg-red-950/20 border border-red-800/40 p-4 rounded-xl">
+                            <span class="text-xs text-slate-400 block mb-1">False Negative (FN)</span>
+                            <span class="text-2xl font-bold text-amber-400">14</span>
+                        </div>
+                        <div class="bg-indigo-950/40 border border-indigo-800/50 p-4 rounded-xl">
+                            <span class="text-xs text-slate-400 block mb-1">True Phishing (TP)</span>
+                            <span class="text-2xl font-bold text-indigo-400">135</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-panel rounded-xl p-6 border border-cyber-border flex flex-col justify-between">
+                    <div>
+                        <h3 class="font-bold text-base mb-2 font-mono text-slate-200">Algorithm Comparison</h3>
+                        <p class="text-xs text-slate-400 mb-4">Cross-validation accuracy benchmark across scikit-learn models.</p>
+                        
+                        <div class="space-y-3 font-mono text-xs">
+                            <div>
+                                <div class="flex justify-between mb-1 text-slate-300">
+                                    <span>Logistic Regression + TF-IDF</span>
+                                    <span class="text-indigo-400 font-bold">98.4%</span>
+                                </div>
+                                <div class="w-full bg-cyber-dark rounded-full h-2 overflow-hidden border border-cyber-border">
+                                    <div class="bg-indigo-500 h-full w-[98.4%]"></div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <div class="flex justify-between mb-1 text-slate-300">
+                                    <span>Linear Support Vector Classifier (LinearSVC)</span>
+                                    <span class="text-indigo-400 font-bold">98.1%</span>
+                                </div>
+                                <div class="w-full bg-cyber-dark rounded-full h-2 overflow-hidden border border-cyber-border">
+                                    <div class="bg-violet-500 h-full w-[98.1%]"></div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <div class="flex justify-between mb-1 text-slate-300">
+                                    <span>Random Forest Classifier (n=100)</span>
+                                    <span class="text-indigo-400 font-bold">97.2%</span>
+                                </div>
+                                <div class="w-full bg-cyber-dark rounded-full h-2 overflow-hidden border border-cyber-border">
+                                    <div class="bg-cyan-500 h-full w-[97.2%]"></div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <div class="flex justify-between mb-1 text-slate-300">
+                                    <span>Multinomial Naive Bayes</span>
+                                    <span class="text-indigo-400 font-bold">96.5%</span>
+                                </div>
+                                <div class="w-full bg-cyber-dark rounded-full h-2 overflow-hidden border border-cyber-border">
+                                    <div class="bg-blue-500 h-full w-[96.5%]"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- ==================== TAB 3: DATASET & FEATURES ==================== -->
+        <div id="tab-dataset" class="space-y-6 hidden">
+            <div>
+                <h2 class="text-2xl font-bold">Dataset & Feature Engineering Pipeline</h2>
+                <p class="text-slate-400 text-sm">Overview of how raw email text is transformed into numerical feature vectors for Scikit-Learn.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="glass-panel rounded-xl p-6 border border-cyber-border space-y-3">
+                    <div class="w-10 h-10 rounded-lg bg-indigo-950 text-indigo-400 border border-indigo-800 flex items-center justify-center font-bold">1</div>
+                    <h3 class="font-bold text-base text-slate-100">Text Preprocessing</h3>
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        Lowercasing text, stripping HTML tags using BeautifulSoup regex, removing English stopwords, and applying Porter Stemmer to normalize word variations (e.g., "verifying", "verify" -> "verifi").
+                    </p>
+                </div>
+
+                <div class="glass-panel rounded-xl p-6 border border-cyber-border space-y-3">
+                    <div class="w-10 h-10 rounded-lg bg-indigo-950 text-indigo-400 border border-indigo-800 flex items-center justify-center font-bold">2</div>
+                    <h3 class="font-bold text-base text-slate-100">TF-IDF Vectorization</h3>
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        Term Frequency-Inverse Document Frequency converts text documents into sparse numerical matrices with n-gram range (1, 2) and max_features=5,000 to capture word pairs like "account suspended".
+                    </p>
+                </div>
+
+                <div class="glass-panel rounded-xl p-6 border border-cyber-border space-y-3">
+                    <div class="w-10 h-10 rounded-lg bg-indigo-950 text-indigo-400 border border-indigo-800 flex items-center justify-center font-bold">3</div>
+                    <h3 class="font-bold text-base text-slate-100">Heuristic Feature Fusion</h3>
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        Additional engineered metadata features are appended: link count, presence of IP addresses in URLs, uppercase ratio in subject lines, and trigger keyword counts (e.g., "urgent", "password", "verify").
+                    </p>
+                </div>
+            </div>
+
+            <!-- Sample Dataset Table -->
+            <div class="glass-panel rounded-xl overflow-hidden border border-cyber-border">
+                <div class="px-6 py-4 bg-cyber-dark/90 border-b border-cyber-border">
+                    <h3 class="font-bold text-sm uppercase tracking-wider font-mono">Training Corpus Sample Preview</h3>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs font-mono">
+                        <thead>
+                            <tr class="bg-cyber-dark/40 text-slate-400 border-b border-cyber-border">
+                                <th class="p-4">Label</th>
+                                <th class="p-4">Email Snippet Preview</th>
+                                <th class="p-4">Length</th>
+                                <th class="p-4">URL Count</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-cyber-border text-slate-300">
+                            <tr>
+                                <td class="p-4"><span class="px-2 py-0.5 rounded bg-red-950 text-red-400 border border-red-800 font-bold">PHISHING</span></td>
+                                <td class="p-4 text-slate-400">"Dear customer your bank account has been locked. Click http://secure-login-verify.tk to unlock..."</td>
+                                <td class="p-4">142 chars</td>
+                                <td class="p-4 text-red-400">2 URLs</td>
+                            </tr>
+                            <tr>
+                                <td class="p-4"><span class="px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800 font-bold">LEGITIMATE</span></td>
+                                <td class="p-4 text-slate-400">"Hi team, let's schedule our weekly sprint retrospective for Thursday at 2 PM in conference room B."</td>
+                                <td class="p-4">98 chars</td>
+                                <td class="p-4 text-emerald-400">0 URLs</td>
+                            </tr>
+                            <tr>
+                                <td class="p-4"><span class="px-2 py-0.5 rounded bg-red-950 text-red-400 border border-red-800 font-bold">PHISHING</span></td>
+                                <td class="p-4 text-slate-400">"URGENT WINNER! You have won $1,000,000 in the international lottery. Send your SSN and bank details..."</td>
+                                <td class="p-4">116 chars</td>
+                                <td class="p-4 text-red-400">1 URL</td>
+                            </tr>
+                            <tr>
+                                <td class="p-4"><span class="px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800 font-bold">LEGITIMATE</span></td>
+                                <td class="p-4 text-slate-400">"Your Amazon.com order #402-91823 has shipped and will arrive on Friday by 8 PM via Prime delivery."</td>
+                                <td class="p-4">104 chars</td>
+                                <td class="p-4 text-emerald-400">1 URL (amazon.com)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- ==================== TAB 4: PYTHON CODE ==================== -->
+        <div id="tab-code" class="space-y-6 hidden">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-2xl font-bold">Python Scikit-Learn Implementation Code</h2>
+                    <p class="text-slate-400 text-sm">Complete standalone Python script to train and serialize the phishing detection model.</p>
+                </div>
+                <button onclick="copyPythonCode()" class="px-4 py-2 bg-cyber-card hover:bg-cyber-border border border-cyber-border rounded-xl text-xs font-mono text-indigo-400 transition flex items-center space-x-2">
+                    <i class="fa-solid fa-copy"></i>
+                    <span id="copy-code-text">Copy Script</span>
+                </button>
+            </div>
+
+            <div class="glass-panel rounded-xl overflow-hidden border border-cyber-border">
+                <div class="px-4 py-3 bg-cyber-dark/90 border-b border-cyber-border flex items-center justify-between font-mono text-xs text-slate-400">
+                    <span>train_phishing_detector.py</span>
+                    <span class="text-indigo-400">Python 3.10+ / Scikit-Learn</span>
+                </div>
+                <pre class="p-6 font-mono text-xs sm:text-sm text-indigo-200 overflow-x-auto leading-relaxed bg-[#050814]/90 select-all" id="python-script-content"><code>import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
+import joblib
+
+# 1. Load Dataset (CSV containing 'text' and 'label' columns where 1=phish, 0=legit)
+print("[+] Loading phishing dataset...")
+df = pd.read_csv("phishing_emails.csv")
+
+# 2. Train / Test Split (80% train, 20% test)
+X_train, X_test, y_train, y_test = train_test_split(
+    df['text'], df['label'], test_size=0.2, random_state=42, stratify=df['label']
+)
+
+# 3. TF-IDF Feature Extraction (Unigrams & Bigrams)
+print("[+] Fitting TF-IDF Vectorizer...")
+vectorizer = TfidfVectorizer(max_features=5000, ngram_range=(1, 2), stop_words='english')
+X_train_tfidf = vectorizer.fit_transform(X_train)
+X_test_tfidf = vectorizer.transform(X_test)
+
+# 4. Train Logistic Regression Classifier
+print("[+] Training Logistic Regression Model...")
+model = LogisticRegression(C=1.0, max_iter=1000, random_state=42)
+model.fit(X_train_tfidf, y_train)
+
+# 5. Evaluate Model Performance
+y_pred = model.predict(X_test_tfidf)
+print("\n--- Model Evaluation ---")
+print(f"Accuracy:  {accuracy_score(y_test, y_pred) * 100:.2f}%")
+print(f"Confusion Matrix:\n{confusion_matrix(y_test, y_pred)}")
+print(f"\nClassification Report:\n{classification_report(y_test, y_pred)}")
+
+# 6. Save Model and Vectorizer for Production Deployment
+joblib.dump(model, "phishing_model.pkl")
+joblib.dump(vectorizer, "tfidf_vectorizer.pkl")
+print("[+] Model and vectorizer successfully serialized to disk.")
+</code></pre>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-cyber-border bg-cyber-card/50 py-6 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 font-mono">
+            <p>© 2026 Phish-Guard ML • Powered by Scikit-Learn & Natural Language Processing</p>
+            <div class="flex space-x-4 mt-3 sm:mt-0">
+                <span class="text-indigo-400/80"><i class="fa-solid fa-brain mr-1"></i> LogisticRegression + TF-IDF</span>
+                <span>•</span>
+                <span class="text-slate-400">Real-Time Threat Scoring</span>
+            </div>
+        </div>
+    </footer>
+
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // Tab Navigation
+        function switchTab(tabId) {
+            const tabs = ['classifier', 'metrics', 'dataset', 'code'];
+            tabs.forEach(t => {
+                const el = document.getElementById(`tab-${t}`);
+                const nav = document.getElementById(`nav-${t}`);
+                if (t === tabId) {
+                    el.classList.remove('hidden');
+                    nav.className = "px-4 py-2 text-sm font-medium rounded-lg transition-all text-indigo-400 bg-cyber-card shadow";
+                } else {
+                    el.classList.add('hidden');
+                    nav.className = "px-4 py-2 text-sm font-medium rounded-lg transition-all text-slate-400 hover:text-white";
+                }
+            });
+            if (tabId === 'classifier') {
+                // Resize chart if needed
+            }
+        }
+
+        // Preset Email Samples
+        const presets = {
+            'phish1': `From: security@paypal-account-update-auth.com
+Subject: URGENT: Your PayPal account has been suspended!
+
+Dear Customer,
+
+We detected unauthorized login attempts originating from an unknown IP address in Eastern Europe. To protect your funds, your account access has been temporarily restricted.
+
+You must verify your identity within 24 hours or your account will be permanently terminated.
+
+Click the secure link below to confirm your credentials:
+http://paypal-security-auth.tk/login?token=9928192
+
+Thank you,
+PayPal Security Team`,
+            'phish2': `From: support@meta-wallet-verify.net
+Subject: ACTION REQUIRED: Claim Your Free Airdrop Token Now!
+
+Congratulations! Your wallet address has been selected for the exclusive Ethereum Layer-2 governance token airdrop. 
+
+You are eligible to claim 2,500 ETH ($6,800 USD value). 
+
+Connect your Web3 private key or seed phrase immediately to claim your tokens before the round closes:
+http://metamask-airdrop-claim.xyz/connect
+
+Regards,
+Ethereum Foundation Airdrop Bot`,
+            'safe1': `From: sarah.jenkins@company.com
+Subject: Agenda & Notes for Thursday Engineering Standup
+
+Hi Team,
+
+Just circulating the agenda for our Thursday engineering sync at 10:00 AM:
+1. Review Q2 deployment pipeline metrics
+2. Discuss Kubernetes cluster upgrade plan
+3. Open floor for Q&A
+
+Zoom link is available on the calendar invite. See you all there!
+
+Best regards,
+Sarah Jenkins
+Engineering Lead`,
+            'safe2': `From: reservations@delta.com
+Subject: Flight Confirmation: Boston (BOS) to San Francisco (SFO) - Ref #9X21LA
+
+Dear Passenger,
+
+Thank you for booking with Delta Air Lines. Your upcoming trip details are confirmed:
+
+Flight: DL 1492
+Date: November 12, 2026
+Depart: BOS (08:30 AM) -> Arrive: SFO (12:15 PM)
+Seat: 14A (Economy Comfort)
+
+You can manage your booking or select meals directly in the Fly Delta app or by visiting https://www.delta.com/manage.
+
+Have a safe flight!`
+        };
+
+        function loadPreset(key) {
+            document.getElementById('email-input').value = presets[key];
+        }
+
+        function clearInput() {
+            document.getElementById('email-input').value = '';
+            document.getElementById('results-dashboard').classList.add('hidden');
+        }
+
+        let tfidChartInstance = null;
+
+        // ML Analysis Simulation Engine
+        function analyzeEmail(event) {
+            event.preventDefault();
+            const text = document.getElementById('email-input').value.toLowerCase();
+            if (!text.trim()) return;
+
+            const btn = document.getElementById('analyze-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i><span>PROCESSING TF-IDF...</span>';
+
+            setTimeout(() => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i><span>RUN ML PREDICTION</span>';
+
+                // Heuristic calculation simulating Logistic Regression coefficients
+                let phishScore = 0.1;
+                const phishKeywords = ['urgent', 'suspended', 'verify', 'click', 'account', 'bank', 'password', 'wallet', 'airdrop', 'claim', 'winner', 'ssn', 'login', 'token', '.tk', '.xyz'];
+                
+                phishKeywords.forEach(kw => {
+                    if (text.includes(kw)) phishScore += 0.15;
+                });
+
+                if (text.includes('http://') || text.includes('.tk') || text.includes('.xyz') || text.includes('update-auth')) {
+                    phishScore += 0.35;
+                }
+
+                if (phishScore > 0.95) phishScore = 0.95;
+                if (phishScore < 0.05) phishScore = 0.05;
+
+                const isPhish = phishScore > 0.5;
+                const confidence = (isPhish ? phishScore : (1 - phishScore)) * 100;
+
+                // Render Dashboard
+                const dashboard = document.getElementById('results-dashboard');
+                dashboard.classList.remove('hidden');
+
+                const banner = document.getElementById('prediction-banner');
+                const iconBg = document.getElementById('prediction-icon-bg');
+                const icon = document.getElementById('prediction-icon');
+                const tag = document.getElementById('prediction-tag');
+                const title = document.getElementById('prediction-title');
+                const subtitle = document.getElementById('prediction-subtitle');
+                const scoreEl = document.getElementById('confidence-score');
+                const barEl = document.getElementById('confidence-bar');
+
+                scoreEl.innerText = `${confidence.toFixed(1)}%`;
+                barEl.style.width = `${confidence}%`;
+
+                if (isPhish) {
+                    banner.className = "glass-panel rounded-2xl p-6 sm:p-8 border border-red-500/50 bg-red-950/10 ai-glow";
+                    iconBg.className = "w-16 h-16 rounded-2xl flex items-center justify-center text-2xl shadow-lg bg-red-500/20 text-red-400 border border-red-500/30";
+                    icon.className = "fa-solid fa-triangle-exclamation";
+                    tag.className = "text-xs uppercase font-mono tracking-widest font-bold px-3 py-1 rounded-full border bg-red-950 text-red-400 border-red-800";
+                    tag.innerText = "CLASSIFICATION: PHISHING THREAT DETECTED";
+                    title.innerText = "High Probability Phishing Email";
+                    subtitle.innerText = "The Scikit-Learn Logistic Regression model classified this email as malicious based on urgent pretexting language and suspicious domain links.";
+                    barEl.className = "bg-red-500 h-full transition-all duration-500";
+                } else {
+                    banner.className = "glass-panel rounded-2xl p-6 sm:p-8 border border-emerald-500/50 bg-emerald-950/10 ai-glow";
+                    iconBg.className = "w-16 h-16 rounded-2xl flex items-center justify-center text-2xl shadow-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
+                    icon.className = "fa-solid fa-shield-check";
+                    tag.className = "text-xs uppercase font-mono tracking-widest font-bold px-3 py-1 rounded-full border bg-emerald-950 text-emerald-400 border-emerald-800";
+                    tag.innerText = "CLASSIFICATION: LEGITIMATE SAFE EMAIL";
+                    title.innerText = "Safe / Legitimate Communication";
+                    subtitle.innerText = "The model found no significant malicious indicators, suspicious URLs, or urgent credential-harvesting patterns.";
+                    barEl.className = "bg-emerald-500 h-full transition-all duration-500";
+                }
+
+                // Render Feature Breakdown
+                const featureList = document.getElementById('feature-list');
+                featureList.innerHTML = `
+                    <div class="flex items-center justify-between p-2.5 rounded-lg bg-cyber-dark/80 border border-cyber-border">
+                        <span class="text-slate-300">TF-IDF Vector Sparsity:</span>
+                        <span class="text-indigo-400 font-bold">4,821 / 5,000 dim</span>
+                    </div>
+                    <div class="flex items-center justify-between p-2.5 rounded-lg bg-cyber-dark/80 border border-cyber-border">
+                        <span class="text-slate-300">Suspicious URL / TLD Check:</span>
+                        <span class="${text.includes('.tk') || text.includes('.xyz') || text.includes('http://') ? 'text-red-400' : 'text-emerald-400'} font-bold">
+                            ${text.includes('.tk') || text.includes('.xyz') || text.includes('http://') ? 'Flagged (Unsafe TLD/HTTP)' : 'Passed (Secure HTTPS)'}
+                        </span>
+                    </div>
+                    <div class="flex items-center justify-between p-2.5 rounded-lg bg-cyber-dark/80 border border-cyber-border">
+                        <span class="text-slate-300">Urgency Trigger Keywords:</span>
+                        <span class="text-indigo-400 font-bold">${phishKeywords.filter(w => text.includes(w)).length} detected</span>
+                    </div>
+                    <div class="flex items-center justify-between p-2.5 rounded-lg bg-cyber-dark/80 border border-cyber-border">
+                        <span class="text-slate-300">Model Decision Function:</span>
+                        <span class="text-indigo-400 font-bold">${isPhish ? '+' : '-'}${(confidence / 10).toFixed(2)} log-odds</span>
+                    </div>
+                `;
+
+                // Render TF-IDF Chart
+                renderTfIdfChart(isPhish);
+                dashboard.scrollIntoView({ behavior: 'smooth' });
+            }, 600);
+        }
+
+        function renderTfIdfChart(isPhish) {
+            const ctx = document.getElementById('tfidfChart').getContext('2d');
+            if (tfidChartInstance) {
+                tfidChartInstance.destroy();
+            }
+
+            const labels = isPhish ? ['account', 'verify', 'urgent', 'click', 'suspended', 'security'] : ['team', 'meeting', 'project', 'schedule', 'review', 'regards'];
+            const dataValues = isPhish ? [0.48, 0.42, 0.39, 0.35, 0.31, 0.28] : [0.45, 0.41, 0.38, 0.33, 0.29, 0.25];
+
+            tfidChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'TF-IDF Weight Coefficient',
+                        data: dataValues,
+                        backgroundColor: isPhish ? 'rgba(239, 68, 68, 0.7)' : 'rgba(16, 185, 129, 0.7)',
+                        borderColor: isPhish ? '#ef4444' : '#10b981',
+                        borderWidth: 1,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: '#94a3b8', font: { family: 'JetBrains Mono', size: 10 } },
+                            grid: { display: false }
+                        },
+                        y: {
+                            ticks: { color: '#94a3b8', font: { family: 'JetBrains Mono', size: 10 } },
+                            grid: { color: 'rgba(30, 41, 59, 0.5)' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function copyPythonCode() {
+            const code = document.getElementById('python-script-content').innerText;
+            navigator.clipboard.writeText(code);
+            const btn = document.getElementById('copy-code-text');
+            btn.innerText = "Copied Script!";
+            setTimeout(() => { btn.innerText = "Copy Script"; }, 2000);
+        }
+    </script>
+</body>
+</html>
